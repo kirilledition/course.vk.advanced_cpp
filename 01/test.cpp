@@ -1,8 +1,28 @@
 #include <gtest/gtest.h>
 
-#include "main.hpp"
+#include "main.cpp"
 
 class AllocatorTest : public ::testing::Test {};
+
+TEST_F(AllocatorTest, testInvalidArgument) {
+  Allocator allocator;
+  try {
+    allocator.makeAllocator(0);
+  } catch (std::invalid_argument &e) {
+    EXPECT_EQ(e.what(), std::string("argument must be greater then 0"));
+  } catch (...) {
+    FAIL() << "Expected std::invalid_argument";
+  }
+
+  try {
+    allocator.makeAllocator(1);
+    allocator.alloc(0);
+  } catch (std::invalid_argument &e) {
+    EXPECT_EQ(e.what(), std::string("argument must be greater then 0"));
+  } catch (...) {
+    FAIL() << "Expected std::invalid_argument";
+  }
+};
 
 TEST_F(AllocatorTest, testMakeAllocator) {
   Allocator allocator;
@@ -60,6 +80,20 @@ TEST_F(AllocatorTest, testReset) {
   allocator.alloc(allocationSize);
   allocator.reset();
   EXPECT_EQ(allocator.offset, size_t(0));
+}
+
+TEST_F(AllocatorTest, testChain) {
+  Allocator allocator;
+
+  allocator.makeAllocator(50);
+  char* p1 = allocator.alloc(20);
+  char* p2 = allocator.alloc(30);
+  allocator.alloc(1);
+  allocator.reset();
+  allocator.alloc(50);
+
+  EXPECT_EQ(p2 - p1, 20);
+  EXPECT_EQ(allocator.offset, size_t(50));
 }
 
 int main(int argc, char **argv) {
